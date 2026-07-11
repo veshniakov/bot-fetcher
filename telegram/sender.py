@@ -11,6 +11,7 @@ from aiogram.types import FSInputFile, Message
 from telegram.captions import build_preview_caption, build_video_caption, split_plain_text_as_html
 from telegram.keyboards import download_confirmation_keyboard
 from utils.shell import CommandError, run_command
+from video.probe import probe_video
 from video.metadata import VideoMetadata
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ async def send_video_result(
         "parse_mode": ParseMode.HTML,
         "supports_streaming": True,
     }
+    kwargs.update(await _video_display_kwargs(file_path))
 
     try:
         await bot.send_video(**kwargs, show_caption_above_media=True)
@@ -140,3 +142,20 @@ async def _make_document_thumbnail(file_path: Path) -> Path | None:
 
 def _file_uri(file_path: Path) -> str:
     return file_path.resolve().as_uri()
+
+
+async def _video_display_kwargs(file_path: Path) -> dict[str, int]:
+    try:
+        probe = await probe_video(file_path)
+    except Exception:
+        logger.info("Failed to probe video before sending", exc_info=True)
+        return {}
+
+    kwargs: dict[str, int] = {}
+    if probe.width and probe.width > 0:
+        kwargs["width"] = probe.width
+    if probe.height and probe.height > 0:
+        kwargs["height"] = probe.height
+    if probe.duration and probe.duration > 0:
+        kwargs["duration"] = max(1, round(probe.duration))
+    return kwargs
