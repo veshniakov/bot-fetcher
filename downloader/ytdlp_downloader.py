@@ -98,12 +98,16 @@ class YtDlpDownloader:
                     "outtmpl": str(work_dir / "%(id)s.%(ext)s"),
                     "merge_output_format": "mp4",
                     "format": (
-                        f"bestvideo[ext=mp4][height<={long_side}][width<={long_side}]+bestaudio[ext=m4a]/"
+                        f"bestvideo[ext=mp4][vcodec^=avc1][height<={long_side}][width<={long_side}]"
+                        f"+bestaudio[ext=m4a][acodec^=mp4a]/"
+                        f"bestvideo[ext=mp4][vcodec^=avc1][height<={long_side}][width<={long_side}]"
+                        f"+bestaudio[ext=m4a]/"
+                        f"best[ext=mp4][vcodec^=avc1][acodec^=mp4a][height<={long_side}][width<={long_side}]/"
                         f"best[ext=mp4][height<={long_side}][width<={long_side}]/"
                         f"bestvideo[height<={long_side}][width<={long_side}]+bestaudio/"
                         f"best[height<={long_side}][width<={long_side}]"
                     ),
-                    "format_sort": [f"res:{selected_height}", "ext:mp4:m4a"],
+                    "format_sort": [f"res:{selected_height}", "vcodec:h264", "acodec:aac", "ext:mp4:m4a"],
                     "postprocessors": [
                         {
                             "key": "FFmpegVideoRemuxer",

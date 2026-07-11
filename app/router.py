@@ -40,6 +40,7 @@ from telegram.keyboards import access_request_keyboard
 from telegram.sender import send_preview, send_video_result
 from utils.formatting import format_size, url_domain
 from video.metadata import VideoMetadata
+from video.probe import probe_video
 
 logger = logging.getLogger(__name__)
 
@@ -299,6 +300,7 @@ def create_router(
             downloaded_path = await _download_with_quality_fallback(task, settings)
             await store.update(task.task_id, downloaded_file_path=downloaded_path)
             downloaded_size = file_size(downloaded_path)
+            await _log_downloaded_media_probe(task, downloaded_path)
             logger.info(
                 "download_ok user_id=%s platform=%s content_type=%s domain=%s downloaded_size=%s status=%s",
                 task.user_id,
@@ -547,3 +549,22 @@ def _clear_work_dir_files(work_dir: Path) -> None:
 
 def _fallback_metadata(task: PendingTask) -> VideoMetadata:
     return VideoMetadata(title="Видео", platform=task.platform, content_type=task.content_type)
+
+
+async def _log_downloaded_media_probe(task: PendingTask, downloaded_path: Path) -> None:
+    try:
+        probe = await probe_video(downloaded_path)
+    except Exception:
+        logger.info("probe_failed task_id=%s user_id=%s", task.task_id, task.user_id, exc_info=True)
+        return
+
+    logger.info(
+        "download_probe task_id=%s user_id=%s video_codec=%s audio_codec=%s width=%s height=%s duration=%s",
+        task.task_id,
+        task.user_id,
+        probe.video_codec,
+        probe.audio_codec,
+        probe.width,
+        probe.height,
+        probe.duration,
+    )

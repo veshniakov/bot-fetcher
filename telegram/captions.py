@@ -41,22 +41,40 @@ def build_preview_caption(metadata: VideoMetadata) -> str:
 def build_video_caption(metadata: VideoMetadata) -> tuple[str, str | None]:
     title = metadata.title or "Видео"
     description = metadata.description or ""
-    escaped_title = escape(title)
-    escaped_description = escape(description)
+    source_url = metadata.webpage_url or ""
 
-    if escaped_description:
-        full_caption = f"<b>{escaped_title}</b>\n\n{escaped_description}"
-    else:
-        full_caption = f"<b>{escaped_title}</b>"
+    caption = _build_video_caption_text(title=title, source_url=source_url, description=description)
+    if len(caption) <= TELEGRAM_CAPTION_LIMIT:
+        return caption, None
 
-    if len(full_caption) <= TELEGRAM_CAPTION_LIMIT:
-        return full_caption, None
+    trimmed_title = title
+    while len(_build_video_caption_text(title=trimmed_title, source_url=source_url, description="")) > TELEGRAM_CAPTION_LIMIT:
+        if len(trimmed_title) <= 1:
+            break
+        trimmed_title = _trim_tail(trimmed_title, max(1, len(trimmed_title) - 10))
 
-    short_title = _fit_text(escaped_title, 900)
-    short_caption = f"<b>{short_title}</b>\n\nПолное описание ниже."
-    if len(short_caption) > TELEGRAM_CAPTION_LIMIT:
-        short_caption = f"<b>{_fit_text(escaped_title, 980)}</b>"
-    return short_caption, description or None
+    while (
+        source_url
+        and len(_build_video_caption_text(title=trimmed_title, source_url=source_url, description=""))
+        > TELEGRAM_CAPTION_LIMIT
+    ):
+        next_limit = max(0, int(len(source_url) * 0.9))
+        if next_limit >= len(source_url):
+            next_limit = len(source_url) - 1
+        source_url = _trim_tail(source_url, next_limit)
+
+    available_description = description
+    while available_description:
+        caption = _build_video_caption_text(
+            title=trimmed_title,
+            source_url=source_url,
+            description=available_description,
+        )
+        if len(caption) <= TELEGRAM_CAPTION_LIMIT:
+            return caption, None
+        available_description = _trim_tail(available_description, max(0, int(len(available_description) * 0.9)))
+
+    return _build_video_caption_text(title=trimmed_title, source_url=source_url, description=""), None
 
 
 def split_plain_text_as_html(text: str, limit: int = TELEGRAM_MESSAGE_LIMIT) -> list[str]:
@@ -106,3 +124,18 @@ def _fit_text(text: str, limit: int) -> str:
     if len(text) <= limit:
         return text
     return text[: max(0, limit - 1)].rstrip() + "…"
+
+
+def _build_video_caption_text(*, title: str, source_url: str, description: str) -> str:
+    lines = [f"<b>{escape(title)}</b>"]
+    if source_url:
+        lines.extend(["", escape(source_url)])
+    if description:
+        lines.extend(["", escape(description)])
+    return "\n".join(lines)
+
+
+def _trim_tail(text: str, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    return text[:limit].rstrip()
