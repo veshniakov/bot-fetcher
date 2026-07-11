@@ -1,0 +1,12 @@
+.env
+data/
+allowed_users.json
+*.session
+*.cookies
+cookies.txt
+__pycache__/
+**pycache**/
+.pytest_cache/
+.venv/
+venv/
+*.log

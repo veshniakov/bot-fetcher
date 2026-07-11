@@ -1,0 +1,25 @@
+services:
+  telegram-bot-api:
+    image: aiogram/telegram-bot-api:latest
+    container_name: telegram-bot-api
+    restart: unless-stopped
+    environment:
+      TELEGRAM_API_ID: ${TELEGRAM_API_ID}
+      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH}
+      TELEGRAM_LOCAL: "true"
+      TELEGRAM_VERBOSITY: "1"
+      TELEGRAM_WORK_DIR: /data/telegram-bot-api
+      TELEGRAM_TEMP_DIR: /data/telegram-bot-api/tmp
+    volumes:
+      - ./data:/data
+
+  bot:
+    build: .
+    container_name: telegram-video-fetcher-bot
+    restart: unless-stopped
+    depends_on:
+      - telegram-bot-api
+    env_file:
+      - .env
+    volumes:
+      - ./data:/data
