@@ -1,233 +1,179 @@
-# Telegram Video Fetcher Bot
+<p align="center">
+  <img src="assets/banner.jpg" alt="Telegram Video Fetcher Bot Banner" width="100%" />
+</p>
 
-🇷🇺 Русский | [🇬🇧 English](README.en.md)
+# 🚀 Telegram Video Fetcher Bot
 
-Личный Telegram-бот для скачивания видео по ссылкам YouTube и Instagram.
+<p align="center">
+  <b>🇷🇺 Русский</b> | <a href="README.en.md">🇬🇧 English</a>
+</p>
 
-Пользователь отправляет ссылку, бот сначала показывает preview с названием, автором, источником, длительностью и обложкой. Полный файл скачивается только после подтверждения.
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.12" />
+  <img src="https://img.shields.io/badge/Aiogram-3.7+-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Aiogram 3" />
+  <img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Compose" />
+  <img src="https://img.shields.io/badge/Local_Bot_API-2000_MB-0088cc?style=for-the-badge&logo=telegram&logoColor=white" alt="2GB Uploads" />
+  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License" />
+</p>
 
-Бот работает на домашнем Debian-сервере через Docker Compose, long polling и локальный Telegram Bot API Server. Webhook и Vercel не используются.
+---
 
-## Что поддерживается
+> ⚡ **Ультимативный медиа-комбайн для Telegram!**  
+> Скачивай видео в **1080p / 720p / 480p**, вытягивай музыку в **чистый MP3** и забирай контент из **YouTube, Shorts, TikTok, Instagram, Twitter (X), Reddit, Pinterest и VK** в один клик и без лишней суеты!
 
-- **YouTube:** видео и YouTube Shorts.
-- **Instagram:** Reels, посты (включая карусели/альбомы) и Stories по прямой ссылке.
-- **TikTok:** видеоклипы без водяного знака.
-- **Twitter / X, Reddit, Pinterest, VK Видео**.
-- **Извлечение Аудио:** скачивание звуковой дорожки в MP3 с ID3-тегами (название, исполнитель, обложка).
-- **Выбор качества:** 1080p Full HD, 720p HD, 480p, MP3.
-- **Быстрый режим (/mode):** авто-скачивание коротких роликов (до 5 минут) без нажатия кнопок.
-- **Живой индикатор:** прогресс-бар скачивания с процентами, скоростью и ETA.
+---
 
-Не поддерживаются: YouTube playlists, live streams, закрытый платный/DRM контент.
+## 🔥 Главные фичи
 
-## Как работает отправка больших файлов
+* 🎬 **Выбор качества на лету:** Скачивай видео в **1080p FHD**, **720p HD** или экономном **480p**. Если файл слишком тяжелый — бот автоматически подберёт оптимальный размер!
+* 🎵 **Чистый звук (MP3 экстрактор):** Нужен только трек или подкаст? Нажми `🎵 Аудио (MP3)` — бот мгновенно вытащит звук, пропишет ID3-теги (артист, трек, обложка) и пришлет трек в Telegram-плеер.
+* ⚡ **Быстрый режим (`/mode`):** Не любишь лишние клики? Включи Quick Mode, и короткие ролики (Shorts, Reels, TikTok) будут скачиваться на лету сразу после отправки ссылки!
+* ⏳ **Живой прогресс-бар:** Никаких зависаний в тишине. Наглядный статус с процентами, текущей скоростью скачивания и оставшимся временем:
+  ```text
+  ⏳ Скачивание...
+  ▰▰▰▰▰▱▱▱▱▱ 50.0%
+  💾 45.2 MB / 90.4 MB
+  ⚡ 5.4 MB/s • Осталось: 00:08
+  ```
+* 🚀 **Файлы до 2 ГБ:** Забудь про стандартный лимит облачного Bot API в 50 МБ! В комплекте идёт собственный **Local Telegram Bot API Server** с поддержкой файлов до **2000 МБ** без двойной перекачки по сети.
+* 🧼 **TikTok No-Watermark:** Видео из TikTok сохраняются кристально чистыми — без водяных знаков и логотипов.
+* 📸 **Карусели и Альбомы:** Посты с несколькими медиафайлами автоматически склеиваются и отправляются нативной группой (`MediaGroup` до 10 файлов).
+* 🛡️ **Защита от бана YouTube:** Встроенные экстракторы мобильных клиентов (`android`, `ios`, `mweb`) и умный авто-повтор без cookies гарантируют отсутствие ошибок `403 Forbidden`.
 
-Проект использует Local Telegram Bot API Server в режиме `--local`.
+---
 
-Это меняет лимит отправки:
+## 🌐 Поддерживаемые платформы
 
-- обычный cloud Bot API: до 50 MB;
-- Local Bot API Server: загрузка файлов до 2000 MB.
+| Платформа | Что умеет | Особенности |
+| :--- | :--- | :--- |
+| **YouTube** | Видео, Shorts | 1080p, 720p, 480p, MP3, обход 403 SABR |
+| **Instagram** | Reels, посты, карусели, Stories | Поддержка альбомов, скачивание историй |
+| **TikTok** | Клипы и тренды | Чистое видео без водяных знаков |
+| **Twitter / X** | Видео и гифки | Максимальное доступное качество |
+| **Reddit** | Ролики с сабреддитов | Авто-склейка звука и видеодорожки |
+| **Pinterest** | Видео-пины | Быстрая загрузка оригинального файла |
+| **VK** | VK Видео, Клипы | Прямой стриминг и сохранение |
+| **Web / Другие** | Vimeo, Rutube и сотни других | Универсальный fallback через yt-dlp |
 
-Алгоритм:
+---
 
-1. Пользователь отправляет ссылку.
-2. Бот получает metadata без скачивания полного файла.
-3. Пользователь выбирает формат (720p, 1080p, 480p или MP3) либо ролик качается сразу, если включен `/mode` Быстрый.
-4. Во время скачивания бот в реальном времени отображает процент, скорость и оставшееся время.
-5. Если выбранное качество превышает лимит сервера, бот автоматически пробует более лёгкие варианты (480p, 360p).
-6. Бот отправляет видео, альбом или аудио в Telegram.
-7. После успешной отправки временные файлы удаляются из рабочей директории.
-
-Тяжёлого ffmpeg-перекодирования в основном сценарии нет. `ffmpeg` остаётся в образе, потому что yt-dlp может использовать его для merge/remux.
-
-После успешной отправки файл хранится на стороне Telegram. Удаление временного файла из `data/work` не удаляет видео из чата пользователя.
-
-
-
-## Создание бота через BotFather
-
-1. Откройте Telegram и найдите `@BotFather`.
-2. Отправьте `/newbot`.
-3. Задайте имя и username бота.
-4. Скопируйте токен в `.env` как `BOT_TOKEN`.
-
-## Telegram API ID и API Hash
-
-Для Local Bot API Server нужны `TELEGRAM_API_ID` и `TELEGRAM_API_HASH`.
-
-Их получают на:
+## 🛠️ Архитектура проекта
 
 ```text
-https://my.telegram.org
+┌─────────────────┐       Long Polling        ┌────────────────────────┐
+│  Пользователь   │ ◄──────────────────────► │     aiogram 3.7+       │
+│  Telegram       │                           │  (Python 3.12 runtime) │
+└─────────────────┘                           └───────────┬────────────┘
+                                                          │
+                    ┌─────────────────────────────────────┴─────────────────────────────────────┐
+                    ▼                                                                           ▼
+      ┌───────────────────────────┐                                               ┌───────────────────────────┐
+      │   Telegram Bot API        │                                               │   Download Engine         │
+      │   (Local Server Container)│                                               │   (yt-dlp + ffmpeg)       │
+      │   - Лимит отправки: 2 GB  │                                               │   - Мобильные клиенты YT  │
+      │   - Zero-copy file URI    │                                               │   - Извлечение ID3 MP3    │
+      └─────────────┬─────────────┘                                               │   - Живой прогресс-бар    │
+                    │                                                             └─────────────┬─────────────┘
+                    └─────────────────────────────┬─────────────────────────────────────────────┘
+                                                  ▼
+                                      ┌───────────────────────┐
+                                      │  Файловая система /   │
+                                      │  Docker Volume /data  │
+                                      │  (Авто-очистка TTL)   │
+                                      └───────────────────────┘
 ```
 
-Секреты храните только в локальном `.env`.
+---
 
-## Настройка .env
+## 🚀 Быстрый запуск
 
-Создайте `.env` из примера:
+### 1. Клонирование репозитория
+
+```bash
+git clone https://github.com/veshniakov/bot-fetcher.git
+cd bot-fetcher
+```
+
+### 2. Настройка окружения
+
+Скопируйте пример конфига:
 
 ```bash
 cp .env.example .env
 ```
 
-Минимум:
+Заполните ваши данные в `.env`:
 
 ```env
-BOT_TOKEN=
-ADMIN_USER_ID=
+# Токен бота из @BotFather
+BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ
 
-TELEGRAM_API_ID=
-TELEGRAM_API_HASH=
+# API ID и Hash от https://my.telegram.org (нужны для Local Bot API)
+TELEGRAM_API_ID=1234567
+TELEGRAM_API_HASH=0123456789abcdef0123456789abcdef
+
+# Telegram ID администратора (для команды /stats)
+ADMIN_USER_ID=123456789
+
+# Локальный Telegram Bot API Server (до 2000 МБ)
 TELEGRAM_API_BASE_URL=http://telegram-bot-api:8081
 TELEGRAM_LOCAL_MODE=true
 MAX_TELEGRAM_UPLOAD_MB=2000
-TELEGRAM_REQUEST_TIMEOUT_SECONDS=1800
+
+# (Опционально) Прокси для обхода блокировок
+PROXY_URL=
 ```
 
-Перед переходом с cloud Bot API на Local Bot API Server нужно один раз выполнить `logOut` у cloud API. В деплое это делается перед запуском новой связки контейнеров.
-
-## Запуск
+### 3. Запуск через Docker Compose
 
 ```bash
 docker compose up -d --build
 ```
 
-Логи бота:
+Проверьте статус контейнеров:
 
 ```bash
-docker logs -f telegram-video-fetcher-bot
+docker compose ps
+docker compose logs -f bot
 ```
 
-Логи Local Bot API Server:
+---
 
-```bash
-docker logs -f telegram-bot-api
-```
+## 🤖 Команды бота
 
-Остановка:
+| Команда | Описание |
+| :--- | :--- |
+| `/start` | Запуск бота и приветственное меню |
+| `/help` | Подробная справка по форматам и источникам |
+| `/mode` | ⚡ Переключение между **Обычным** и **Быстрым** режимом |
+| `/id` | Узнать свой Telegram User ID |
+| `/stats` | 📊 Статистика использования бота (доступно только админу) |
 
-```bash
-docker compose down
-```
+---
 
-Перезапуск:
+## 💡 Как это работает
 
-```bash
-docker compose restart
-```
+1. **Отправка ссылки:** Вы кидаете в чат ссылку на видео.
+2. **Превью:** Бот парсит метаданные за доли секунды и показывает карточку с обложкой, автором и кнопками:
+   - `🎬 720p HD` | `🌟 1080p FHD`
+   - `📱 480p` | `🎵 Аудио (MP3)`
+   - `❌ Отмена`
+3. **Загрузка и отправка:**
+   - Если включен Быстрый режим (`/mode`), ролики до 5 минут сразу начинают качаться без лишних подтверждений.
+   - Во время скачивания бот мягко обновляет прогресс-бар раз в 2.5 секунды, не раздражая Telegram Flood Limits.
+   - По завершении файл моментально улетает в чат, а временные данные стираются с диска.
 
-## Обновление yt-dlp
+---
 
-```bash
-docker compose build --no-cache bot
-docker compose up -d
-```
+## 🔒 Безопасность и стабильность
 
-## Instagram cookies/session
+- **Rate Limiting & Concurrency:** Встроенный семафор (`asyncio.Semaphore(10)`) исключает перегрузку хоста при одновременных запросах.
+- **Защита от спама:** Пользователь не может спамить задачами — следующая ссылка принимается только после завершения текущей.
+- **Безопасность сети:** Парсер блокирует любые попытки скачивания с локальных IP (`localhost`, `127.0.0.1`, `192.168.x.x`).
+- **Авто-клининг:** Фоновый таймер автоматически удаляет незавершённые задачи и временные файлы старше 30 минут.
 
-Для yt-dlp можно положить cookies в Netscape-формате:
+---
 
-```text
-data/cookies/cookies.txt
-```
+## 📄 Лицензия
 
-Для Instagram Stories используется Instaloader session:
-
-```bash
-docker compose run --rm bot python -m instaloader --login=your_instagram_username --sessionfile=/data/cookies/instagram.session
-```
-
-Пароль вводится интерактивно и не должен сохраняться в `.env`, README или коде.
-
-## Развертывание на сервере
-
-Подключение:
-
-```bash
-ssh user@your-server-ip
-```
-
-Переход в директорию проекта:
-
-```bash
-cd bot-downloader
-```
-
-Проверенная среда:
-
-- Linux (Debian 12/13, Ubuntu 22.04/24.04).
-- Docker Engine и Docker Compose plugin установлены.
-
-Первый переход на Local Bot API Server:
-
-```bash
-docker compose down
-set -a
-. ./.env
-set +a
-curl -s "https://api.telegram.org/bot${BOT_TOKEN}/logOut"
-docker compose up -d --build
-```
-
-Обычный запуск/обновление:
-
-```bash
-docker compose up -d --build
-```
-
-Проверка:
-
-```bash
-docker ps
-docker logs -f telegram-bot-api
-docker logs -f telegram-video-fetcher-bot
-docker compose exec bot sh -lc "df -h /data && ls -la /data"
-```
-
-Рабочие данные на HDD:
-
-```text
-data/work
-data/cache
-data/cookies
-data/telegram-bot-api
-```
-
-Внутри контейнера бота:
-
-```text
-/data/work
-/data/cache
-/data/cookies
-```
-
-После успешной отправки временные видео удаляются из `data/work`. Local Bot API Server может хранить свои служебные данные в `data/telegram-bot-api`.
-
-## Структура
-
-```text
-bot-downloader/
-  app/
-  data/
-    work/
-    cache/
-    cookies/
-    telegram-bot-api/
-  downloader/
-  storage/
-  telegram/
-  utils/
-  video/
-  Dockerfile
-  docker-compose.yml
-  requirements.txt
-  .env
-  .env.example
-  .gitignore
-  README.md
-```
-
-`.env`, `data/`, cookies и session-файлы не должны попадать в Git.
+Распространяется под лицензией **MIT**. Подробности в файле [LICENSE](LICENSE).
