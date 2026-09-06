@@ -43,8 +43,6 @@ def _parse_user_ids(value: str | None) -> set[int]:
 class Settings:
     bot_token: str
     admin_user_id: int | None
-    allowed_user_ids: set[int]
-    allowed_users_path: Path
     telegram_api_base_url: str | None
     telegram_local_mode: bool
     max_telegram_upload_mb: int
@@ -68,6 +66,7 @@ class Settings:
     pending_task_ttl_minutes: int
     log_level: str
     compression_time_factor: float | None
+    proxy_url: str | None = None
 
     @property
     def telegram_cloud_limit_bytes(self) -> int:
@@ -94,8 +93,6 @@ def load_settings() -> Settings:
     return Settings(
         bot_token=os.getenv("BOT_TOKEN", "").strip(),
         admin_user_id=int(admin_raw) if admin_raw and admin_raw.strip() else None,
-        allowed_user_ids=_parse_user_ids(os.getenv("ALLOWED_USER_IDS")),
-        allowed_users_path=Path(os.getenv("ALLOWED_USERS_PATH", "/data/allowed_users.json")),
         telegram_api_base_url=telegram_api_base_url,
         telegram_local_mode=telegram_local_mode,
         max_telegram_upload_mb=_parse_int(
@@ -137,4 +134,5 @@ def load_settings() -> Settings:
             if compression_factor_raw and compression_factor_raw.strip()
             else None
         ),
+        proxy_url=(os.getenv("PROXY_URL") or "").strip() or None,
     )

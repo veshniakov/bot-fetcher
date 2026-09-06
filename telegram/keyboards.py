@@ -54,18 +54,4 @@ def document_fallback_confirmation_keyboard(task_id: str) -> InlineKeyboardMarku
     )
 
 
-def access_request_keyboard(user_id: int) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="Разрешить",
-                    callback_data=f"approve_user:{user_id}",
-                ),
-                InlineKeyboardButton(
-                    text="Отклонить",
-                    callback_data=f"reject_user:{user_id}",
-                ),
-            ]
-        ]
-    )
+

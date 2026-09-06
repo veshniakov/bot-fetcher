@@ -85,6 +85,10 @@ class PendingTaskStore:
                 for task in self._tasks.values()
             )
 
+    async def get_active_tasks_count(self) -> int:
+        async with self._lock:
+            return sum(1 for task in self._tasks.values() if not task.is_terminal and task.status in (DOWNLOADING, SENDING))
+
     async def set_status(self, task_id: str, status: str) -> PendingTask | None:
         async with self._lock:
             task = self._tasks.get(task_id)

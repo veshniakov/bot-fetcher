@@ -55,15 +55,39 @@ class YtDlpDownloader:
         download: bool,
         work_dir: Path | None,
         max_height: int | None = None,
+        use_cookies: bool = True,
     ) -> dict[str, Any]:
         import yt_dlp
 
-        options = self._options(download=download, work_dir=work_dir, max_height=max_height)
-        with yt_dlp.YoutubeDL(options) as ydl:
-            info = ydl.extract_info(url, download=download)
-            if not isinstance(info, dict):
-                raise MetadataError("Unexpected metadata shape")
-            return info
+        options = self._options(
+            download=download,
+            work_dir=work_dir,
+            max_height=max_height,
+            use_cookies=use_cookies,
+        )
+        try:
+            with yt_dlp.YoutubeDL(options) as ydl:
+                info = ydl.extract_info(url, download=download)
+                if not isinstance(info, dict):
+                    raise MetadataError("Unexpected metadata shape")
+                return info
+        except yt_dlp.utils.DownloadError as exc:
+            err_msg = str(exc)
+            if use_cookies and self.settings.ytdlp_cookies_path.exists() and any(
+                code in err_msg for code in ("403", "Forbidden", "Sign in")
+            ):
+                logger.warning(
+                    "yt-dlp encountered auth/403 error with cookies (%s), retrying without cookies...",
+                    exc,
+                )
+                return self._extract_info(
+                    url,
+                    download=download,
+                    work_dir=work_dir,
+                    max_height=max_height,
+                    use_cookies=False,
+                )
+            raise
 
     def _options(
         self,
@@ -71,6 +95,7 @@ class YtDlpDownloader:
         download: bool,
         work_dir: Path | None,
         max_height: int | None = None,
+        use_cookies: bool = True,
     ) -> dict[str, Any]:
         options: dict[str, Any] = {
             "quiet": True,
@@ -83,9 +108,21 @@ class YtDlpDownloader:
             "fragment_retries": 3,
             "concurrent_fragment_downloads": 4,
             "socket_timeout": 30,
+            "geo_bypass": True,
         }
 
-        if self.settings.ytdlp_cookies_path.exists():
+        if self.platform == "YouTube":
+            options["extractor_args"] = {
+                "youtube": {
+                    "player_client": ["android", "ios", "mweb"],
+                    "player_skip": ["webpage", "configs"],
+                }
+            }
+
+        if getattr(self.settings, "proxy_url", None):
+            options["proxy"] = self.settings.proxy_url
+
+        if use_cookies and self.settings.ytdlp_cookies_path.exists():
             options["cookiefile"] = str(self.settings.ytdlp_cookies_path)
 
         if download:

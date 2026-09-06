@@ -39,38 +39,7 @@
 
 После успешной отправки файл хранится на стороне Telegram. Удаление временного файла из `data/work` не удаляет видео из чата пользователя.
 
-## Доступ пользователей
 
-Корневой администратор задаётся в `.env`:
-
-```env
-ADMIN_USER_ID=123456789
-```
-
-Whitelist хранится на HDD:
-
-```text
-data/allowed_users.json
-```
-
-При первом запуске бот перенесёт пользователей из `ALLOWED_USER_IDS` в этот JSON-файл. Дальше пользователей можно добавлять без перезапуска.
-
-Команды администратора:
-
-```text
-/allow <telegram_id>
-/deny <telegram_id>
-/users
-```
-
-Также работает заявка на доступ:
-
-1. Новый пользователь пишет боту `/start`.
-2. Бот показывает ему Telegram ID.
-3. Администратор получает сообщение с кнопками `Разрешить` и `Отклонить`.
-4. После нажатия `Разрешить` пользователь сразу получает доступ.
-
-Команда `/id` доступна всем и показывает Telegram user ID.
 
 ## Создание бота через BotFather
 
@@ -104,8 +73,6 @@ cp .env.example .env
 ```env
 BOT_TOKEN=
 ADMIN_USER_ID=
-ALLOWED_USER_IDS=
-ALLOWED_USERS_PATH=/data/allowed_users.json
 
 TELEGRAM_API_ID=
 TELEGRAM_API_HASH=
@@ -170,25 +137,23 @@ docker compose run --rm bot python -m instaloader --login=your_instagram_usernam
 
 Пароль вводится интерактивно и не должен сохраняться в `.env`, README или коде.
 
-## Деплой на NUC
+## Развертывание на сервере
 
 Подключение:
 
 ```bash
-ssh mufasa@192.168.1.96
+ssh user@your-server-ip
 ```
 
-Проект находится на HDD:
+Переход в директорию проекта:
 
 ```bash
-cd '/mnt/hdd/🛠️ Проекты/👨‍💻 Программирование/bot-downloader'
+cd bot-downloader
 ```
 
 Проверенная среда:
 
-- Debian GNU/Linux 13 (trixie).
-- HDD смонтирован как `/mnt/hdd`.
-- Системный NVMe смонтирован как `/`.
+- Linux (Debian 12/13, Ubuntu 22.04/24.04).
 - Docker Engine и Docker Compose plugin установлены.
 
 Первый переход на Local Bot API Server:
@@ -223,7 +188,6 @@ docker compose exec bot sh -lc "df -h /data && ls -la /data"
 data/work
 data/cache
 data/cookies
-data/allowed_users.json
 data/telegram-bot-api
 ```
 
@@ -233,7 +197,6 @@ data/telegram-bot-api
 /data/work
 /data/cache
 /data/cookies
-/data/allowed_users.json
 ```
 
 После успешной отправки временные видео удаляются из `data/work`. Local Bot API Server может хранить свои служебные данные в `data/telegram-bot-api`.
@@ -248,7 +211,6 @@ bot-downloader/
     cache/
     cookies/
     telegram-bot-api/
-    allowed_users.json
   downloader/
   storage/
   telegram/

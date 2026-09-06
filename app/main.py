@@ -11,8 +11,8 @@ from aiogram.enums import ParseMode
 from aiogram.types import BotCommand
 
 from app.config import load_settings
-from app.access_store import AccessStore
 from app.router import create_router
+from app.stats import StatsManager
 from app.tasks import PendingTaskStore
 from storage.cleanup import cleanup_old_work_files, cleanup_pending_tasks_loop
 from storage.paths import ensure_data_dirs
@@ -54,9 +54,9 @@ async def main() -> None:
     )
     dispatcher = Dispatcher()
     store = PendingTaskStore()
-    access_store = AccessStore(settings)
-    await access_store.load()
-    dispatcher.include_router(create_router(settings, store, access_store))
+    download_semaphore = asyncio.Semaphore(10)
+    stats_manager = StatsManager(settings.workdir.parent / "stats.json")
+    dispatcher.include_router(create_router(settings, store, download_semaphore, stats_manager))
 
     cleanup_task = asyncio.create_task(cleanup_pending_tasks_loop(settings, store))
 
@@ -66,9 +66,7 @@ async def main() -> None:
                 BotCommand(command="start", description="Начать работу"),
                 BotCommand(command="help", description="Помощь"),
                 BotCommand(command="id", description="Показать Telegram ID"),
-                BotCommand(command="allow", description="Разрешить пользователя"),
-                BotCommand(command="deny", description="Удалить пользователя"),
-                BotCommand(command="users", description="Показать whitelist"),
+                BotCommand(command="stats", description="Статистика (только админ)"),
             ]
         )
         logger.info("Bot started in long polling mode")
