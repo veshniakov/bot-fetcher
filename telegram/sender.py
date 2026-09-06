@@ -6,7 +6,7 @@ from pathlib import Path
 from aiogram import Bot
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import FSInputFile, Message
+from aiogram.types import FSInputFile, InputMediaPhoto, InputMediaVideo, Message
 
 from telegram.captions import build_preview_caption, build_video_caption, split_plain_text_as_html
 from telegram.keyboards import download_confirmation_keyboard
@@ -67,6 +67,84 @@ async def send_video_result(
                 parse_mode=ParseMode.HTML,
                 disable_web_page_preview=True,
             )
+
+
+async def send_audio_result(
+    bot: Bot,
+    *,
+    chat_id: int,
+    file_path: Path,
+    metadata: VideoMetadata,
+    use_file_uri: bool = False,
+) -> None:
+    caption, extra_description = build_video_caption(metadata)
+    audio = _file_uri(file_path) if use_file_uri else FSInputFile(file_path)
+    duration = max(1, round(metadata.duration)) if metadata.duration else None
+
+    kwargs = {
+        "chat_id": chat_id,
+        "audio": audio,
+        "caption": caption,
+        "title": metadata.title or "Аудиозапись",
+        "performer": metadata.uploader or None,
+        "duration": duration,
+        "parse_mode": ParseMode.HTML,
+    }
+
+    await bot.send_audio(**kwargs)
+
+    if extra_description:
+        for chunk in split_plain_text_as_html(extra_description):
+            await bot.send_message(
+                chat_id=chat_id,
+                text=chunk,
+                parse_mode=ParseMode.HTML,
+                disable_web_page_preview=True,
+            )
+
+
+async def send_media_group_result(
+    bot: Bot,
+    *,
+    chat_id: int,
+    file_paths: list[Path],
+    metadata: VideoMetadata,
+    use_file_uri: bool = False,
+) -> None:
+    if not file_paths:
+        return
+
+    # Telegram limit for send_media_group is 10 items
+    items_to_send = file_paths[:10]
+    caption, _ = build_video_caption(metadata)
+    media_list: list[InputMediaPhoto | InputMediaVideo] = []
+
+    for idx, path in enumerate(items_to_send):
+        media_file = _file_uri(path) if use_file_uri else FSInputFile(path)
+        is_first = idx == 0
+        ext = path.suffix.lower()
+
+        if ext in {".jpg", ".jpeg", ".png", ".webp"}:
+            media_list.append(
+                InputMediaPhoto(
+                    media=media_file,
+                    caption=caption if is_first else None,
+                    parse_mode=ParseMode.HTML if is_first else None,
+                )
+            )
+        else:
+            display_kwargs = await _video_display_kwargs(path)
+            media_list.append(
+                InputMediaVideo(
+                    media=media_file,
+                    caption=caption if is_first else None,
+                    parse_mode=ParseMode.HTML if is_first else None,
+                    supports_streaming=True,
+                    **display_kwargs,
+                )
+            )
+
+    await bot.send_media_group(chat_id=chat_id, media=media_list)
 
 
 async def send_document_result(

@@ -11,6 +11,7 @@ __pycache__/
 venv/
 *.log
 stats.json
+user_settings.json
 *.tar.gz
 *.zip
 .DS_Store

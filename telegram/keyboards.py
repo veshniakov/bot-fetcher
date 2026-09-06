@@ -8,13 +8,44 @@ def download_confirmation_keyboard(task_id: str) -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="Да, скачать",
-                    callback_data=f"confirm_download:{task_id}",
+                    text="🎬 720p HD",
+                    callback_data=f"dl:{task_id}:720",
                 ),
                 InlineKeyboardButton(
-                    text="Нет",
+                    text="🌟 1080p FHD",
+                    callback_data=f"dl:{task_id}:1080",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="📱 480p",
+                    callback_data=f"dl:{task_id}:480",
+                ),
+                InlineKeyboardButton(
+                    text="🎵 Аудио (MP3)",
+                    callback_data=f"dl:{task_id}:audio",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="❌ Отмена",
                     callback_data=f"cancel_download:{task_id}",
                 ),
+            ],
+        ]
+    )
+
+
+def mode_settings_keyboard(quick_mode: bool) -> InlineKeyboardMarkup:
+    status_text = "⚡ Быстрый (без подтверждения)" if quick_mode else "📋 Обычный (с превью и выбором)"
+    btn_action = "Переключить на Обычный" if quick_mode else "Переключить на Быстрый"
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=f"🔄 {btn_action}",
+                    callback_data="toggle_quick_mode",
+                )
             ]
         ]
     )
@@ -52,6 +83,3 @@ def document_fallback_confirmation_keyboard(task_id: str) -> InlineKeyboardMarku
             ]
         ]
     )
-
-
-

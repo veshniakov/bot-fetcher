@@ -1,4 +1,4 @@
-﻿# Telegram Video Fetcher Bot
+# Telegram Video Fetcher Bot
 
 [🇷🇺 Русский](README.md) | 🇬🇧 English
 
@@ -10,12 +10,21 @@ Features an interactive preview with video title, author, duration, and thumbnai
 
 ## 🌟 Key Features
 
-- **Supported Platforms & Formats:**
+- **Multi-Platform Support:**
   - **YouTube:** Standard videos and YouTube Shorts.
-  - **Instagram:** Reels, video posts, and Stories (via direct story link).
-- **Interactive Preview Card:**
-  - Shows metadata (title, uploader, duration, thumbnail, and estimated size) prior to downloading.
-  - User confirms download with inline buttons.
+  - **Instagram:** Reels, posts, carousels/albums, and Stories.
+  - **TikTok:** Clean video downloads without watermarks.
+  - **Twitter / X, Reddit, Pinterest, VK Video**.
+- **Audio Extraction (MP3):**
+  - Extract pristine audio streams directly into MP3 with preserved ID3 tags (artist, title, cover art) for the Telegram audio player.
+- **Resolution & Quality Selection:**
+  - Choose between **1080p FHD**, **720p HD**, **480p Economy**, or **MP3 Audio**.
+- **Live Progress Bar:**
+  - Real-time download progress reporter showing percentage, speed, and ETA with flood-control rate limiting.
+- **Quick Mode (`/mode`):**
+  - Toggle auto-download for short clips (Shorts, Reels, TikTok <= 5 min) without requiring manual button confirmation.
+- **Album / Carousel Delivery:**
+  - Multi-item posts and galleries sent as native Telegram `MediaGroup` albums (up to 10 photos/videos).
 - **Large File Support (up to 2000 MB):**
   - Uses a self-hosted `telegram-bot-api` local server container alongside the bot.
   - Transmits local file paths (`is_local=True`) directly to Telegram without double-transfer network overhead.
@@ -23,8 +32,10 @@ Features an interactive preview with video title, author, duration, and thumbnai
   - Uses `yt-dlp` configured with mobile client extraction (`android`, `ios`, `mweb`) to bypass Google's 403 Forbidden / SABR anti-bot blocks.
   - Automatic fallback retry without cookies if session cookies expire.
 - **Quality Fallback Strategy:**
-  - Downloads ready-to-stream formats up to 720p (H.264 / AAC).
+  - Downloads ready-to-stream formats up to selected resolution (H.264 / AAC).
   - Automatically attempts 480p and 360p if the file exceeds the maximum upload limit.
+- **Concurrency Protection:**
+  - Concurrency limited via `asyncio.Semaphore(10)` and per-user active task guards.
 - **Background Storage Maintenance:**
   - Periodically cleans up task directories and temporary downloads according to configurable TTL.
 - **Proxy Support:**

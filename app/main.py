@@ -14,6 +14,7 @@ from app.config import load_settings
 from app.router import create_router
 from app.stats import StatsManager
 from app.tasks import PendingTaskStore
+from app.user_settings import UserSettingsManager
 from storage.cleanup import cleanup_old_work_files, cleanup_pending_tasks_loop
 from storage.paths import ensure_data_dirs
 from utils.logging import setup_logging
@@ -56,7 +57,17 @@ async def main() -> None:
     store = PendingTaskStore()
     download_semaphore = asyncio.Semaphore(10)
     stats_manager = StatsManager(settings.workdir.parent / "stats.json")
-    dispatcher.include_router(create_router(settings, store, download_semaphore, stats_manager))
+    user_settings = UserSettingsManager(settings.workdir.parent / "user_settings.json")
+
+    dispatcher.include_router(
+        create_router(
+            settings,
+            store,
+            download_semaphore,
+            stats_manager,
+            user_settings,
+        )
+    )
 
     cleanup_task = asyncio.create_task(cleanup_pending_tasks_loop(settings, store))
 
@@ -65,6 +76,7 @@ async def main() -> None:
             [
                 BotCommand(command="start", description="Начать работу"),
                 BotCommand(command="help", description="Помощь"),
+                BotCommand(command="mode", description="Режим скачивания (Обычный/Быстрый)"),
                 BotCommand(command="id", description="Показать Telegram ID"),
                 BotCommand(command="stats", description="Статистика (только админ)"),
             ]
