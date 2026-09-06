@@ -19,7 +19,8 @@ logger = logging.getLogger(__name__)
 
 async def send_preview(message: Message, metadata: VideoMetadata, task_id: str) -> None:
     caption = build_preview_caption(metadata)
-    keyboard = download_confirmation_keyboard(task_id)
+    is_album_or_photo = (metadata.content_type == "instagram_post")
+    keyboard = download_confirmation_keyboard(task_id, is_album_or_photo=is_album_or_photo)
     if metadata.thumbnail:
         try:
             await message.answer_photo(
@@ -58,6 +59,34 @@ async def send_video_result(
         await bot.send_video(**kwargs, show_caption_above_media=True)
     except TypeError:
         await bot.send_video(**kwargs)
+
+    if extra_description:
+        for chunk in split_plain_text_as_html(extra_description):
+            await bot.send_message(
+                chat_id=chat_id,
+                text=chunk,
+                parse_mode=ParseMode.HTML,
+                disable_web_page_preview=True,
+            )
+
+
+async def send_photo_result(
+    bot: Bot,
+    *,
+    chat_id: int,
+    file_path: Path,
+    metadata: VideoMetadata,
+    use_file_uri: bool = False,
+) -> None:
+    caption, extra_description = build_video_caption(metadata)
+    photo = _file_uri(file_path) if use_file_uri else FSInputFile(file_path)
+
+    await bot.send_photo(
+        chat_id=chat_id,
+        photo=photo,
+        caption=caption,
+        parse_mode=ParseMode.HTML,
+    )
 
     if extra_description:
         for chunk in split_plain_text_as_html(extra_description):

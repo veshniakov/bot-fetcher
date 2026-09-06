@@ -33,12 +33,19 @@ from downloader.base import (
     UnsupportedStoryUrlError,
     UnsupportedUrlError,
 )
+from downloader.instagram_post_downloader import InstagramPostDownloader
 from downloader.instagram_story_downloader import InstagramStoryDownloader
 from downloader.platform_detector import SUPPORTED_MESSAGE, detect_platform
 from downloader.ytdlp_downloader import YtDlpDownloader
 from storage.paths import create_task_work_dir, file_size, remove_task_work_dir
 from telegram.keyboards import mode_settings_keyboard
-from telegram.sender import send_audio_result, send_media_group_result, send_preview, send_video_result
+from telegram.sender import (
+    send_audio_result,
+    send_media_group_result,
+    send_photo_result,
+    send_preview,
+    send_video_result,
+)
 from utils.formatting import format_size, url_domain
 from utils.progress import DownloadProgressReporter
 from video.metadata import VideoMetadata
@@ -234,7 +241,18 @@ def create_router(
         downloader = _downloader_for_task(settings, task)
 
         try:
-            metadata = await downloader.get_metadata(url)
+            try:
+                metadata = await downloader.get_metadata(url)
+            except Exception as meta_exc:
+                if task.platform == "Instagram" and task.content_type != "instagram_story":
+                    logger.info("Retrying Instagram metadata with InstagramPostDownloader: %s", meta_exc)
+                    post_dl = InstagramPostDownloader(settings)
+                    metadata = await post_dl.get_metadata(url)
+                    task.content_type = "instagram_post"
+                    await store.update(task.task_id, content_type="instagram_post")
+                else:
+                    raise
+
             await store.update(task.task_id, metadata=metadata)
             logger.info(
                 "metadata_ok user_id=%s platform=%s content_type=%s domain=%s duration=%s status=%s",
@@ -248,12 +266,16 @@ def create_router(
 
             # Проверяем Quick Mode
             is_quick = await user_settings.is_quick_mode(user_id)
-            if is_quick and metadata.duration and metadata.duration <= 300:
+            is_auto_downloadable = (
+                (metadata.duration and metadata.duration <= 300)
+                or (task.content_type == "instagram_post")
+            )
+            if is_quick and is_auto_downloadable:
                 status_msg = await message.answer("⚡ <b>Быстрый режим:</b> начинаю скачивание...")
                 await _execute_download_flow(
                     bot=bot,
                     task=task,
-                    target="720",
+                    target="post" if task.content_type == "instagram_post" else "720",
                     status_message=status_msg,
                     store=store,
                     settings=settings,
@@ -317,7 +339,13 @@ def create_router(
         await callback.answer()
         await _clear_callback_keyboard(callback)
 
-        format_label = "аудио (MP3)" if target == "audio" else f"видео ({target}p)"
+        if target == "audio":
+            format_label = "аудио (MP3)"
+        elif target == "post":
+            format_label = "публикации"
+        else:
+            format_label = f"видео ({target}p)"
+
         status_msg = None
         if callback.message:
             status_msg = await callback.message.answer(f"⏳ Готовлю скачивание {format_label}...")
@@ -386,37 +414,61 @@ async def _execute_download_flow(
                 await _remove_task(task, store, settings, COMPLETED)
                 return
 
-            # Скачивание видео
-            target_height = int(target) if target.isdigit() else 720
-            downloaded_path = await _download_with_quality_fallback(
-                task,
-                settings,
-                target_height=target_height,
-                progress_hook=reporter.ytdlp_hook if reporter else None,
-            )
-            if reporter:
-                await reporter.stop()
+            # Скачивание медиа (видео / публикация / альбом)
+            if task.content_type == "instagram_post":
+                if status_message:
+                    await _safe_edit_text(status_message, "⏳ <b>Скачиваю публикацию Instagram...</b>")
+                post_dl = InstagramPostDownloader(settings)
+                all_media = await post_dl.download(task.url, work_dir)
+                if reporter:
+                    await reporter.stop()
+            else:
+                target_height = int(target) if target.isdigit() else 720
+                try:
+                    downloaded_path = await _download_with_quality_fallback(
+                        task,
+                        settings,
+                        target_height=target_height,
+                        progress_hook=reporter.ytdlp_hook if reporter else None,
+                    )
+                    if reporter:
+                        await reporter.stop()
+                    await store.update(task.task_id, downloaded_file_path=downloaded_path)
+                    await _log_downloaded_media_probe(task, downloaded_path)
+                    all_media = YtDlpDownloader._find_all_downloaded_files(work_dir)
+                    if not all_media and downloaded_path.exists():
+                        all_media = [downloaded_path]
+                except Exception as dl_exc:
+                    if task.platform == "Instagram" and task.content_type != "instagram_story":
+                        logger.warning("Yt-dlp failed on Instagram, falling back to InstagramPostDownloader: %s", dl_exc)
+                        if status_message:
+                            await _safe_edit_text(status_message, "⏳ <b>Скачиваю публикацию Instagram...</b>")
+                        post_dl = InstagramPostDownloader(settings)
+                        all_media = await post_dl.download(task.url, work_dir)
+                        if reporter:
+                            await reporter.stop()
+                    else:
+                        raise
 
-            await store.update(task.task_id, downloaded_file_path=downloaded_path)
-            downloaded_size = file_size(downloaded_path)
-            await _log_downloaded_media_probe(task, downloaded_path)
+            if not all_media:
+                raise DownloadError("No downloaded files found")
 
+            total_size = sum(file_size(p) for p in all_media)
             logger.info(
-                "download_ok user_id=%s platform=%s domain=%s size=%s status=%s",
+                "download_ok user_id=%s platform=%s domain=%s files_count=%s total_size=%s",
                 task.user_id,
                 task.platform,
                 started_domain,
-                downloaded_size,
-                DOWNLOADING,
+                len(all_media),
+                total_size,
             )
 
-            if downloaded_size > settings.telegram_upload_limit_bytes:
+            if total_size > settings.telegram_upload_limit_bytes:
                 await _remove_task(task, store, settings, FAILED)
                 if status_message:
                     await _safe_edit_text(status_message, TOO_LARGE_MESSAGE)
                 return
 
-            all_media = YtDlpDownloader._find_all_downloaded_files(work_dir)
             await store.set_status(task.task_id, SENDING)
 
             if len(all_media) > 1:
@@ -430,15 +482,27 @@ async def _execute_download_flow(
                     use_file_uri=settings.telegram_local_mode,
                 )
             else:
-                if status_message:
-                    await _safe_edit_text(status_message, "📤 <b>Отправка видео в Telegram...</b>")
-                await send_video_result(
-                    bot,
-                    chat_id=task.chat_id,
-                    file_path=downloaded_path,
-                    metadata=task.metadata or _fallback_metadata(task),
-                    use_file_uri=settings.telegram_local_mode,
-                )
+                single_file = all_media[0]
+                if single_file.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}:
+                    if status_message:
+                        await _safe_edit_text(status_message, "📤 <b>Отправка фото в Telegram...</b>")
+                    await send_photo_result(
+                        bot,
+                        chat_id=task.chat_id,
+                        file_path=single_file,
+                        metadata=task.metadata or _fallback_metadata(task),
+                        use_file_uri=settings.telegram_local_mode,
+                    )
+                else:
+                    if status_message:
+                        await _safe_edit_text(status_message, "📤 <b>Отправка видео в Telegram...</b>")
+                    await send_video_result(
+                        bot,
+                        chat_id=task.chat_id,
+                        file_path=single_file,
+                        metadata=task.metadata or _fallback_metadata(task),
+                        use_file_uri=settings.telegram_local_mode,
+                    )
 
             await stats.increment_downloads()
             if status_message:
@@ -490,6 +554,8 @@ async def _show_stats(message: Message, stats: StatsManager, store: PendingTaskS
 def _downloader_for_task(settings: Settings, task: PendingTask):
     if task.content_type == "instagram_story":
         return InstagramStoryDownloader(settings)
+    if task.content_type == "instagram_post":
+        return InstagramPostDownloader(settings)
     return YtDlpDownloader(settings, task.platform, task.content_type)
 
 

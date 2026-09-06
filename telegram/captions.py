@@ -21,6 +21,15 @@ def build_preview_caption(metadata: VideoMetadata) -> str:
         lines.extend(["", "Это то видео, которое нужно скачать?"])
         return "\n".join(lines)
 
+    if metadata.content_type == "instagram_post":
+        lines = ["<b>Нашёл публикацию Instagram:</b>", ""]
+        if metadata.title:
+            lines.append(f"<b>Описание:</b> {escape(metadata.title)}")
+        if metadata.uploader:
+            lines.append(f"<b>Автор:</b> {escape(metadata.uploader)}")
+        lines.extend(["", "Скачать эту публикацию?"])
+        return "\n".join(lines)
+
     lines = ["<b>Нашёл видео:</b>", ""]
     if metadata.title:
         lines.append(f"<b>Название:</b> {escape(metadata.title)}")

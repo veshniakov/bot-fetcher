@@ -26,6 +26,16 @@ async def main() -> None:
     settings = load_settings()
     setup_logging(settings.log_level)
 
+    if settings.proxy_url:
+        import os
+        os.environ["http_proxy"] = settings.proxy_url
+        os.environ["https_proxy"] = settings.proxy_url
+        os.environ["HTTP_PROXY"] = settings.proxy_url
+        os.environ["HTTPS_PROXY"] = settings.proxy_url
+        os.environ["no_proxy"] = "telegram-bot-api,localhost,127.0.0.1,172.16.0.0/12,192.168.0.0/16"
+        os.environ["NO_PROXY"] = "telegram-bot-api,localhost,127.0.0.1,172.16.0.0/12,192.168.0.0/16"
+        logger.info("Configured outbound proxy: %s", settings.proxy_url)
+
     if not settings.bot_token:
         raise RuntimeError("BOT_TOKEN is required")
 

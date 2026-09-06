@@ -3,7 +3,24 @@ from __future__ import annotations
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
-def download_confirmation_keyboard(task_id: str) -> InlineKeyboardMarkup:
+def download_confirmation_keyboard(task_id: str, is_album_or_photo: bool = False) -> InlineKeyboardMarkup:
+    if is_album_or_photo:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="📥 Скачать публикацию / альбом",
+                        callback_data=f"dl:{task_id}:post",
+                    ),
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="❌ Отмена",
+                        callback_data=f"cancel_download:{task_id}",
+                    ),
+                ],
+            ]
+        )
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
